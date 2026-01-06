@@ -39,7 +39,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                 xmlns:skos="http://www.w3.org/2004/02/skos/core#"
                 xmlns:sw="http://www.w3.org/2003/06/sw-vocab-status/ns#"
                 xmlns:widoco="https://w3id.org/widoco/vocab#"
-                xmlns:rer="http://w3id.org/rml/report#"
                 xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                 xsi:schemaLocation="http://www.oxygenxml.com/ns/doc/xsl
 http://www.oxygenxml.com/ns/doc/xsl ">
@@ -2184,28 +2183,42 @@ http://www.oxygenxml.com/ns/doc/xsl ">
         <xsl:value-of select="exists($rdf/element()[@*:about = $iri or @*:ID = $iri][f:getType(.) != $type])"/>
     </xsl:function>
 
-    <!-- Add custom annotations properties, for classes, RER: potentialCause, potentialSolution, potentialConfusion, potentialConfusionError -->
+    <xsl:function name="f:getURI" as="xs:string">
+        <xsl:param name="node" as="node()"/>
+        <xsl:value-of select="concat(namespace-uri($node), local-name($node))"/>
+    </xsl:function>
+
+    <xsl:variable name="custom-display-properties"
+                  select="$root/rdf:RDF/(owl:AnnotationProperty | owl:ObjectProperty | owl:DatatypeProperty)[exists(widoco:displayClassAnnotation)]" />
+
     <xsl:template name="get.rer.annotations">
-        <xsl:variable name="all-rer-annotations"
-                      select="rer:potentialCause | rer:potentialSolution | rer:potentialConfusion | rer:potentialConfusionError"/>
+        <xsl:variable name="current-class" select="."/>
 
-        <xsl:if test="exists($all-rer-annotations)">
+        <xsl:variable name="has-custom-annotations" as="xs:boolean">
+            <xsl:value-of select="some $prop in $custom-display-properties
+                              satisfies exists($current-class/*[f:getURI(.) = ($prop/@rdf:about | $prop/@rdf:ID)])"/>
+        </xsl:variable>
+
+        <xsl:if test="$has-custom-annotations">
             <dl>
-                <xsl:call-template name="render.rer.entry">
-                    <xsl:with-param name="nodes" select="rer:potentialCause"/>
-                </xsl:call-template>
+                <xsl:for-each select="$custom-display-properties">
+                    <xsl:sort select="if (string(widoco:displayClassAnnotation) castable as xs:decimal)
+                                  then xs:decimal(widoco:displayClassAnnotation)
+                                  else 999"
+                              data-type="number"
+                              order="ascending"/>
 
-                <xsl:call-template name="render.rer.entry">
-                    <xsl:with-param name="nodes" select="rer:potentialSolution"/>
-                </xsl:call-template>
+                    <xsl:variable name="prop-uri" select="@rdf:about | @rdf:ID"/>
 
-                <xsl:call-template name="render.rer.entry">
-                    <xsl:with-param name="nodes" select="rer:potentialConfusion"/>
-                </xsl:call-template>
+                    <xsl:variable name="matching-children"
+                                  select="$current-class/*[f:getURI(.) = $prop-uri]" />
 
-                <xsl:call-template name="render.rer.entry">
-                    <xsl:with-param name="nodes" select="rer:potentialConfusionError"/>
-                </xsl:call-template>
+                    <xsl:if test="exists($matching-children)">
+                        <xsl:call-template name="render.rer.entry">
+                            <xsl:with-param name="nodes" select="$matching-children"/>
+                        </xsl:call-template>
+                    </xsl:if>
+                </xsl:for-each>
             </dl>
         </xsl:if>
     </xsl:template>
