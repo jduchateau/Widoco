@@ -39,6 +39,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
                 xmlns:skos="http://www.w3.org/2004/02/skos/core#"
                 xmlns:sw="http://www.w3.org/2003/06/sw-vocab-status/ns#"
                 xmlns:widoco="https://w3id.org/widoco/vocab#"
+                xmlns:rer="http://w3id.org/rml/report#"
                 xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                 xsi:schemaLocation="http://www.oxygenxml.com/ns/doc/xsl
 http://www.oxygenxml.com/ns/doc/xsl ">
@@ -413,6 +414,7 @@ http://www.oxygenxml.com/ns/doc/xsl ">
             <xsl:call-template name="get.entity.url"/>
             <xsl:apply-templates select="rdfs:comment|prov:definition|skos:definition|obo:IAO_0000115"/>
             <xsl:apply-templates select="dc:description[normalize-space() != ''] , dc:description[@*:resource]"/>
+            <xsl:call-template name="get.rer.annotations" />
             <xsl:call-template name="get.entity.metadata"/>
             <xsl:call-template name="get.rationale"/>
             <xsl:call-template name="get.example"/>
@@ -2181,6 +2183,60 @@ http://www.oxygenxml.com/ns/doc/xsl ">
         <xsl:variable name="type" select="f:getType($el)" as="xs:string"/>
         <xsl:value-of select="exists($rdf/element()[@*:about = $iri or @*:ID = $iri][f:getType(.) != $type])"/>
     </xsl:function>
+
+    <!-- Add custom annotations properties, for classes, RER: potentialCause, potentialSolution, potentialConfusion, potentialConfusionError -->
+    <xsl:template name="get.rer.annotations">
+        <xsl:variable name="all-rer-annotations"
+                      select="rer:potentialCause | rer:potentialSolution | rer:potentialConfusion | rer:potentialConfusionError"/>
+
+        <xsl:if test="exists($all-rer-annotations)">
+            <dl>
+                <xsl:call-template name="render.rer.entry">
+                    <xsl:with-param name="nodes" select="rer:potentialCause"/>
+                </xsl:call-template>
+
+                <xsl:call-template name="render.rer.entry">
+                    <xsl:with-param name="nodes" select="rer:potentialSolution"/>
+                </xsl:call-template>
+
+                <xsl:call-template name="render.rer.entry">
+                    <xsl:with-param name="nodes" select="rer:potentialConfusion"/>
+                </xsl:call-template>
+
+                <xsl:call-template name="render.rer.entry">
+                    <xsl:with-param name="nodes" select="rer:potentialConfusionError"/>
+                </xsl:call-template>
+            </dl>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template name="render.rer.entry">
+        <xsl:param name="nodes"/>
+
+        <xsl:variable name="visible-nodes" select="$nodes[f:isInLanguage(.)]"/>
+
+        <xsl:if test="exists($visible-nodes)">
+            <dt>
+                <xsl:variable name="propertyIRI"
+                              select="concat(namespace-uri($visible-nodes[1]), local-name($visible-nodes[1]))"/>
+
+                <xsl:value-of select="f:getLabel($propertyIRI)"/>
+            </dt>
+
+            <xsl:for-each select="$visible-nodes">
+                <dd>
+                    <xsl:choose>
+                        <xsl:when test="normalize-space(@*:resource) = ''">
+                            <xsl:value-of select="text()"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:apply-templates select="@*:resource"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </dd>
+            </xsl:for-each>
+        </xsl:if>
+    </xsl:template>
 
     <!--CUSTOM ANNOTATIONS-->
     <xsl:template name="get.rationale">
