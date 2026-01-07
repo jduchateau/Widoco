@@ -404,7 +404,12 @@ http://www.oxygenxml.com/ns/doc/xsl ">
     <xsl:template match="element()|text()[normalize-space() = '']"/>
 
     <xsl:template match="owl:Class|rdfs:Class">
+        <xsl:variable name="widocoOrder" select="f:getWidocoOrder(.)"/>
         <div id="{generate-id()}" class="entity">
+            <xsl:if test="exists($widocoOrder)">
+                <xsl:attribute name="data-widoco-order"
+                               select="format-number($widocoOrder,'0.################')"/>
+            </xsl:if>
             <xsl:call-template name="get.entity.name">
                 <xsl:with-param name="toc" select="'classes'" tunnel="yes" as="xs:string"/>
                 <xsl:with-param name="toc.string" select="f:getDescriptionLabel('classtoc')" tunnel="yes"
@@ -499,7 +504,11 @@ http://www.oxygenxml.com/ns/doc/xsl ">
     </xsl:template>
 
     <xsl:template match="element()" mode="toc">
+        <xsl:variable name="widocoOrder" select="f:getWidocoOrder(.)"/>
         <li>
+            <xsl:if test="exists($widocoOrder)">
+                <xsl:attribute name="data-widoco-order" select="format-number($widocoOrder,'0.################')"/>
+            </xsl:if>
             <a href="#{generate-id()}" title="{@*:about|@*:ID}">
                 <xsl:choose>
                     <!--<xsl:when test="exists(rdfs:label|skos:prefLabel|obo:IAO_0000118)">
@@ -1829,8 +1838,8 @@ http://www.oxygenxml.com/ns/doc/xsl ">
                 <xsl:call-template name="get.classes.toc"/>
                 <xsl:apply-templates
                         select="/rdf:RDF/(owl:Class|rdfs:Class)[exists(element()) and exists(@*:about|@*:ID)]">
-                    <xsl:sort select="lower-case(f:getLabel(@*:about|@*:ID))"
-                              order="ascending" data-type="text"/>
+                    <xsl:sort select="if (exists(f:getWidocoOrder(.))) then f:getWidocoOrder(.) else 999999" order="ascending" data-type="number"/>
+                    <xsl:sort select="lower-case(f:getLabel(@*:about|@*:ID))" order="ascending" data-type="text"/>
                     <xsl:with-param name="type" tunnel="yes" as="xs:string" select="'class'"/>
                 </xsl:apply-templates>
             </div>
@@ -1841,8 +1850,8 @@ http://www.oxygenxml.com/ns/doc/xsl ">
         <ul class="hlist">
             <xsl:apply-templates select="/rdf:RDF/(owl:Class|rdfs:Class)[exists(element()) and exists(@*:about|@*:ID)]"
                                  mode="toc">
-                <xsl:sort select="lower-case(f:getLabel(@*:about|@*:ID))"
-                          order="ascending" data-type="text"/>
+                <xsl:sort select="if (exists(f:getWidocoOrder(.))) then f:getWidocoOrder(.) else 999999" order="ascending" data-type="number"/>
+                <xsl:sort select="lower-case(f:getLabel(@*:about|@*:ID))" order="ascending" data-type="text"/>
                 <xsl:with-param name="type" tunnel="yes" as="xs:string" select="'class'"/>
             </xsl:apply-templates>
         </ul>
@@ -2174,6 +2183,14 @@ http://www.oxygenxml.com/ns/doc/xsl ">
                 <xsl:value-of select="'[ERROR-LABEL]'"/>
             </xsl:otherwise>
         </xsl:choose>
+    </xsl:function>
+
+    <xsl:function name="f:getWidocoOrder" as="xs:decimal?">
+        <xsl:param name="el" as="element()"/>
+        <xsl:variable name="order" select="$el/widoco:order"/>
+        <xsl:if test="$order != '' and $order castable as xs:decimal">
+            <xsl:value-of select="xs:decimal($order)"/>
+        </xsl:if>
     </xsl:function>
 
     <xsl:function name="f:hasPunning" as="xs:boolean">
