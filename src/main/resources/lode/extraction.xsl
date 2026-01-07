@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-This file has been edited by Daniel Garijo, Varun Ratnakar, and Victor Chavez
+This file has been edited by Daniel Garijo, Varun Ratnakar, Victor Chavez, and Jakub Duchateau
 
 Copyright (c) 2010-2014, Silvio Peroni <essepuntato@gmail.com>
 
