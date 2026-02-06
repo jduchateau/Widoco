@@ -609,7 +609,14 @@ public class Constants {
 	private static String getURLs(ArrayList<String> resources, String label) {
 		StringBuilder elem = new StringBuilder("<dt>" + label + "</dt>\n");
 		for (String e : resources) {
-			elem.append("<dd><a href=\"").append(e).append("\">").append(e).append("</a></dd>");
+			try {
+				// Check if the string is a URL
+				new java.net.URL(e);
+				elem.append("<dd><a href=\"").append(e).append("\">").append(e).append("</a></dd>");
+			} catch (java.net.MalformedURLException ex) {
+				// Just display as text if not a valid URL
+				elem.append("<dd>").append(e).append("</dd>");
+			}
 		}
 		elem.append("\n");
 		return elem.toString() ;
